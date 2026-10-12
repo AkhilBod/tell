@@ -1,0 +1,10 @@
+{
+  "name": "tell",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "replay": "node scripts/replay.mjs",
+    "coach-replay": "node scripts/coach-replay.mjs"
+  }
+}

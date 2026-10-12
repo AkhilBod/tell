@@ -1,0 +1,882 @@
+<title>Sealed Throw</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  /* Layout: a two-part desk. Left, the table where both throws land. Right, the machine's open notebook. One column on phones. */
+  --paper: #ECEEF2;
+  --surface: #F7F8FA;
+  --raised: #FFFFFF;
+  --ink: #141823;
+  --muted: #586074;
+  --line: #D3D7E0;
+  --line-soft: #E3E6EC;
+  --machine: #2846D6;
+  --on-machine: #F4F6FF;
+  --machine-soft: #DDE3FB;
+  --human: #A65208;
+  --human-soft: #F7E6D4;
+  --draw: #6E7588;
+  --hatch: rgba(255, 255, 255, .08);
+  --shadow: rgba(20, 24, 35, .35);
+  --display: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0E1117; --surface: #161A23; --raised: #1C212C; --ink: #E6E8EE; --muted: #9AA1B2;
+    --line: #2A3040; --line-soft: #222836; --machine: #7D93FF; --on-machine: #0E1117; --machine-soft: #1D2547;
+    --human: #F2A24E; --human-soft: #3A2A18; --draw: #8A91A3; --hatch: rgba(14, 17, 23, .1); --shadow: rgba(0, 0, 0, .7);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0E1117; --surface: #161A23; --raised: #1C212C; --ink: #E6E8EE; --muted: #9AA1B2;
+  --line: #2A3040; --line-soft: #222836; --machine: #7D93FF; --on-machine: #0E1117; --machine-soft: #1D2547;
+  --human: #F2A24E; --human-soft: #3A2A18; --draw: #8A91A3; --hatch: rgba(14, 17, 23, .1); --shadow: rgba(0, 0, 0, .7);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 48px; }
+@media (min-width: 700px) { .wrap { padding-inline: 28px; padding-block: 28px 64px; } }
+
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 18px 40px; padding-bottom: 18px; border-bottom: 2px solid var(--ink); }
+.eyebrow { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 0; font-family: var(--display); font-weight: 800; font-size: clamp(48px, 9vw, 84px); line-height: .88; letter-spacing: .005em; text-transform: uppercase; text-wrap: balance; }
+.tag { margin: 10px 0 0; color: var(--muted); max-width: 48ch; }
+.tally { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.score { display: flex; align-items: flex-end; gap: 22px; }
+.side { display: flex; flex-direction: column; align-items: center; min-width: 54px; }
+.side .lab { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.side .num { font-family: var(--display); font-weight: 800; font-size: 56px; line-height: .95; font-variant-numeric: tabular-nums; }
+.side.m .num { color: var(--machine); }
+.side.h .num { color: var(--human); }
+.side.d .num { color: var(--draw); font-size: 36px; }
+.rate { margin: 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .tally { align-items: flex-start; } }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; margin-top: 26px; }
+@media (min-width: 960px) { .grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); align-items: start; } }
+
+.arena { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.table { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; padding: 24px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+.slot { display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0; }
+.slot-lab { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.vs { font-family: var(--display); font-weight: 700; font-size: 22px; color: var(--muted); text-transform: uppercase; }
+
+.card { position: relative; width: min(100%, 172px); aspect-ratio: 5 / 7; perspective: 900px; container-type: inline-size; }
+.inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .4s cubic-bezier(.3, .7, .25, 1); }
+.card.flipped .inner { transform: rotateY(180deg); }
+.face { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5cqw; padding: 8cqw; border-radius: 12px; text-align: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.front { background-color: var(--machine); background-image: repeating-linear-gradient(135deg, var(--hatch) 0 2px, transparent 2px 9px); color: var(--on-machine); box-shadow: 0 12px 26px -16px var(--shadow); }
+.front .lock { width: 22cqw; height: 22cqw; }
+.sealed { font-family: var(--display); font-weight: 800; font-size: 15cqw; line-height: 1; letter-spacing: .1em; text-transform: uppercase; }
+.hash { font-family: var(--mono); font-size: clamp(7px, 7.4cqw, 12px); line-height: 1.35; opacity: .92; }
+.hash span { display: block; white-space: nowrap; }
+.hash-lab { font-size: max(8px, 6cqw); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; opacity: .78; }
+.back { transform: rotateY(180deg); background: var(--raised); border: 2px solid var(--machine); color: var(--machine); box-shadow: 0 12px 26px -16px var(--shadow); }
+.big-ic { width: 58cqw; height: 58cqw; }
+.mv { font-family: var(--display); font-weight: 800; font-size: 17cqw; line-height: 1; letter-spacing: .02em; text-transform: uppercase; color: var(--ink); }
+.solo { border: 2px dashed var(--line); color: var(--muted); }
+.solo .q { font-family: var(--display); font-weight: 800; font-size: 44cqw; line-height: 1; }
+.solo .wait { font-size: max(10px, 8cqw); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.card.you.filled .solo { border: 2px solid var(--human); background: var(--raised); color: var(--human); box-shadow: 0 12px 26px -16px var(--shadow); animation: pop .22s ease-out; }
+@keyframes pop { from { transform: scale(.92); } to { transform: none; } }
+
+.verdict { margin: 0; min-height: 3.6em; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: 16px; }
+.verdict strong { font-family: var(--display); font-weight: 800; font-size: 34px; line-height: 1; letter-spacing: .02em; text-transform: uppercase; }
+.verdict .k-m { color: var(--machine); }
+.verdict .k-h { color: var(--human); }
+.verdict .k-d { color: var(--draw); }
+
+.throws { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.throw { appearance: none; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 6px 12px; border: 1.5px solid var(--line); border-radius: 14px; background: var(--raised); color: var(--ink); font: inherit; cursor: pointer; transition: border-color .15s, background-color .15s, transform .1s; }
+.throw svg { width: 46px; height: 46px; color: var(--human); }
+.throw .nm { font-family: var(--display); font-weight: 800; font-size: 24px; line-height: 1; letter-spacing: .03em; text-transform: uppercase; }
+.throw kbd { font-family: var(--mono); font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+.throw:hover, .throw.hit { border-color: var(--human); background: var(--human-soft); }
+.throw:active { transform: translateY(1px); }
+.throw:focus-visible { outline: 3px solid var(--machine); outline-offset: 2px; }
+.throws[aria-busy="true"] .throw { opacity: .5; cursor: progress; }
+.status { margin: -4px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
+
+.lead { margin: 6px 0 0; padding: 14px 16px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+.lead figcaption { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.lead figcaption span:last-child { letter-spacing: .04em; text-transform: none; font-weight: 400; }
+#leadSvg { display: block; width: 100%; height: 150px; margin-top: 6px; }
+.c-grid { stroke: var(--line); stroke-width: 1; }
+.c-zero { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 4; }
+.c-lab { fill: var(--muted); font: 11px var(--mono); }
+.c-up { fill: var(--machine); fill-opacity: .16; }
+.c-dn { fill: var(--human); fill-opacity: .2; }
+.c-line { fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linejoin: round; }
+.c-m { fill: var(--machine); } .c-h { fill: var(--human); } .c-d { fill: var(--draw); }
+.c-empty { fill: var(--muted); font: 13px var(--body); }
+
+.mind { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.mind h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 32px; line-height: 1; text-transform: uppercase; letter-spacing: .01em; }
+.block { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding-top: 14px; border-top: 1px solid var(--line); }
+.block h3 { margin: 0; display: flex; justify-content: space-between; gap: 10px; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.block h3 span { letter-spacing: .04em; text-transform: none; font-weight: 400; }
+.block p { margin: 0; }
+.empty { color: var(--muted); max-width: 60ch; }
+.sum { font-size: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.sum b.m { color: var(--machine); } .sum b.h { color: var(--human); }
+.sub { font-size: 12px; color: var(--muted); }
+.bars { display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: 70px minmax(0, 1fr) 40px 72px; align-items: center; gap: 10px; font-size: 14px; }
+.track { display: block; height: 10px; background: var(--line-soft); border-radius: 5px; overflow: hidden; }
+.fill { display: block; height: 100%; background: var(--draw); border-radius: 5px; opacity: .55; }
+.bar.exp .fill { background: var(--machine); opacity: 1; }
+.pct { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
+.you-tag { justify-self: start; padding: 1px 7px; border-radius: 999px; background: var(--human-soft); color: var(--human); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.why { max-width: 62ch; font-size: 15px; line-height: 1.55; }
+.used { font-size: 13px; color: var(--muted); }
+.used b { color: var(--ink); }
+
+.chip { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.chip.k-m { background: var(--machine-soft); color: var(--machine); }
+.chip.k-h { background: var(--human-soft); color: var(--human); }
+.chip.k-d { background: var(--line-soft); color: var(--draw); }
+
+.proof { margin: 0; display: grid; gap: 4px 14px; grid-template-columns: minmax(0, 1fr); }
+.proof dt { font-size: 12px; color: var(--muted); }
+.proof dd { margin: 0 0 6px; min-width: 0; }
+code { font-family: var(--mono); font-size: 12.5px; }
+.proof code { overflow-wrap: anywhere; }
+.cmd { display: flex; align-items: stretch; gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.cmd code { flex: 1; min-width: 0; padding: 10px 12px; overflow-x: auto; white-space: nowrap; }
+.btn { appearance: none; border: 0; border-left: 1px solid var(--line); background: var(--raised); color: var(--ink); font: 700 13px var(--body); padding: 0 14px; cursor: pointer; }
+.btn:hover { background: var(--machine-soft); color: var(--machine); }
+.btn:focus-visible, .link:focus-visible, .ghost:focus-visible { outline: 3px solid var(--machine); outline-offset: 2px; }
+.fine { font-size: 12.5px; color: var(--muted); }
+
+.board { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.board li { display: grid; grid-template-columns: minmax(0, 1fr) 46px 84px 44px; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 8px; font-size: 14px; }
+.board li.head { padding-block: 0 4px; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.board li.used { background: var(--machine-soft); }
+.board .nm { min-width: 0; }
+.board .var { display: block; font-size: 12px; color: var(--muted); }
+.board .rec, .board .val { text-align: right; font-variant-numeric: tabular-nums; }
+.board .rec { font-size: 13px; color: var(--muted); }
+.board .val { font-family: var(--mono); font-size: 12px; }
+.board .fill { background: var(--machine); opacity: 1; }
+
+.ledger-wrap { max-height: 300px; overflow: auto; border: 1px solid var(--line); border-radius: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--line-soft); white-space: nowrap; }
+th { position: sticky; top: 0; z-index: 1; background: var(--surface); font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+td.m { color: var(--machine); font-weight: 700; } td.h { color: var(--human); font-weight: 700; }
+td code { font-size: 12px; color: var(--muted); }
+tr.on td { background: var(--machine-soft); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.link { appearance: none; border: 0; background: none; padding: 0; color: var(--machine); font: 700 12px var(--body); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+
+.how { margin-top: 44px; padding-top: 18px; border-top: 2px solid var(--ink); display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px 40px; }
+@media (min-width: 860px) { .how { grid-template-columns: 200px minmax(0, 1fr); } }
+.how h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 32px; line-height: 1; text-transform: uppercase; }
+.how .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px 32px; }
+.how p { margin: 0; max-width: 62ch; color: var(--ink); }
+.how p b { font-weight: 700; }
+.reset { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 4px; }
+.ghost { appearance: none; border: 1.5px solid var(--line); background: var(--raised); color: var(--ink); border-radius: 10px; padding: 8px 14px; font: 700 13px var(--body); cursor: pointer; }
+.ghost:hover { border-color: var(--ink); }
+.ghost.armed { border-color: var(--human); background: var(--human-soft); color: var(--human); }
+
+@media (prefers-reduced-motion: reduce) {
+  .inner, .throw { transition: none; }
+  .card.you.filled .solo { animation: none; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Rock · Paper · Scissors</p>
+      <h1>Sealed Throw</h1>
+      <p class="tag">I lock in my throw before you pick and show you its fingerprint to prove it. After you throw, I show you how I read you.</p>
+    </div>
+    <div class="tally">
+      <div class="score" aria-live="polite">
+        <div class="side m"><span class="lab">Machine</span><span class="num" id="sM">0</span></div>
+        <div class="side d"><span class="lab">Draws</span><span class="num" id="sD">0</span></div>
+        <div class="side h"><span class="lab">You</span><span class="num" id="sH">0</span></div>
+      </div>
+      <p class="rate" id="rate">No rounds yet. Fair odds would be 50% of decided rounds.</p>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="arena" aria-label="Play">
+      <div class="table">
+        <div class="slot">
+          <span class="slot-lab">Machine</span>
+          <div class="card" id="mCard">
+            <div class="inner">
+              <div class="face front" aria-label="My sealed throw">
+                <svg class="lock" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="11" y="21" width="26" height="19" rx="3"/><path d="M16.5 21v-5.5a7.5 7.5 0 0 1 15 0V21"/><path d="M24 28.5v4"/></svg>
+                <span class="sealed">Sealed</span>
+                <span class="hash" id="cardHash"></span>
+                <span class="hash-lab">SHA-256</span>
+              </div>
+              <div class="face back" id="mBack"></div>
+            </div>
+          </div>
+        </div>
+        <span class="vs">vs</span>
+        <div class="slot">
+          <span class="slot-lab">You</span>
+          <div class="card you" id="hCard"><div class="face solo" id="hFace"></div></div>
+        </div>
+      </div>
+
+      <p class="verdict" id="verdict" role="status"></p>
+
+      <div class="throws" id="throws">
+        <button class="throw" id="throw-0" data-m="0" type="button"></button>
+        <button class="throw" id="throw-1" data-m="1" type="button"></button>
+        <button class="throw" id="throw-2" data-m="2" type="button"></button>
+      </div>
+      <p class="status" id="status"></p>
+
+      <figure class="lead">
+        <figcaption><span>My lead over time</span><span id="leadNote"></span></figcaption>
+        <svg id="leadSvg" role="img" aria-label="Machine wins minus your wins, round by round"></svg>
+      </figure>
+    </section>
+
+    <aside class="mind" aria-label="How the machine read you">
+      <h2>Inside the machine</h2>
+
+      <section class="block">
+        <h3>Last round <span id="lastNo"></span></h3>
+        <div id="last" class="block-body" style="display:grid;gap:10px"></div>
+      </section>
+
+      <section class="block" id="verifyBlock">
+        <h3>Proof I didn't switch <span id="vRound"></span></h3>
+        <div id="verifyEmpty" class="empty">The fingerprint on my card is a SHA-256 hash of my throw plus a secret key. After you throw I reveal the key, so you can hash it yourself and check it matches.</div>
+        <div id="verifyBody" hidden style="display:grid;gap:10px">
+          <dl class="proof">
+            <dt>Fingerprint shown before you threw</dt><dd><code id="vHash"></code></dd>
+            <dt>What was sealed</dt><dd><code id="vText"></code></dd>
+          </dl>
+          <div class="cmd"><code id="vCmd"></code><button class="btn" id="copyCmd" type="button">Copy</button></div>
+          <p class="fine">Paste it into a terminal. The output should match the fingerprint. On Linux, <code>sha256sum</code> works too.</p>
+        </div>
+      </section>
+
+      <section class="block">
+        <h3>Reads I'm tracking <span id="readCount"></span></h3>
+        <ol class="board" id="board"></ol>
+      </section>
+
+      <section class="block">
+        <h3>Every round <span id="ledgerCount"></span></h3>
+        <div class="ledger-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Machine</th><th>You</th><th>Result</th><th>Fingerprint</th><th><span class="visually-hidden">Check</span></th></tr></thead>
+            <tbody id="ledger"></tbody>
+          </table>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <section class="how" aria-label="How it works">
+    <h2>How I read you</h2>
+    <div class="cols">
+      <p><b>Twelve pattern-spotters</b> guess your next throw from what both of us have done: your favorite throw, what you do after a win or a loss, what follows your last one or two throws, whether you copy me, and whether a recent run has happened before. Three of them assume you're watching me and countering my habits.</p>
+      <p><b>Each guess is tried three ways.</b> Straight, shifted up (you throw whatever beats the obvious read), and shifted down (you throw whatever it beats). That makes 36 reads. Every one is scored every round, recent rounds count more, and I throw against the read with the best record.</p>
+      <p><b>When nothing is working, I throw at random.</b> Against a player who is truly random, no one wins more than a third of rounds over time, me included. People are rarely random, and that is the whole edge.</p>
+      <p><b>The fingerprint keeps me honest.</b> Before you choose, I hash my throw with a random 32-character key and show you the result. After you choose, I reveal the key. Changing my throw would change the hash.</p>
+      <div class="reset">
+        <button class="ghost" id="reset" type="button">Forget me</button>
+        <span class="fine">Your rounds are saved in this browser only. Forgetting wipes them and starts a fresh read.</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script id="engine">
+// ===ENGINE START===
+const NAMES = ["Rock", "Paper", "Scissors"];
+const beats = (m) => (m + 1) % 3;
+const outcome = (a, u) => (a === u ? 0 : a === beats(u) ? 1 : -1);
+
+function createEngine(opts = {}) {
+  const DECAY = opts.decay ?? 0.85;
+  const BETA = opts.beta ?? 1;
+  const MODE = opts.mode ?? "best";
+  const WINDOW = 40;
+  const DEPTH = 300;
+  const U = [];
+  const A = [];
+  const N = (m) => NAMES[m];
+  const ofTimes = (c, t) => (t === 1 ? "the one time so far" : `${c} of ${t} times`);
+
+  function tally(n, from, match, value) {
+    const c = [0, 0, 0];
+    const last = [-1, -1, -1];
+    for (let i = Math.max(0, from); i < n; i++) {
+      if (!match(i)) continue;
+      const v = value(i);
+      c[v]++;
+      last[v] = i;
+    }
+    const t = c[0] + c[1] + c[2];
+    if (!t) return null;
+    let m = 0;
+    for (let k = 1; k < 3; k++) if (c[k] > c[m] || (c[k] === c[m] && last[k] > last[m])) m = k;
+    return { m, c: c[m], t };
+  }
+
+  function findRun(seq, minL, maxL) {
+    const n = seq.length;
+    const floor = Math.max(0, n - DEPTH);
+    for (let L = Math.min(maxL, n - 1); L >= minL; L--) {
+      for (let j = n - L - 1; j >= floor; j--) {
+        let k = 0;
+        while (k < L && seq[j + k] === seq[n - L + k]) k++;
+        if (k === L) return { L, next: seq[j + L] };
+      }
+    }
+    return null;
+  }
+
+  const PREDICTORS = [
+    { id: "fav", name: "Favorite", run(n) {
+      if (n < 1) return null;
+      const from = Math.max(0, n - 12);
+      const r = tally(n, from, () => true, (i) => U[i]);
+      const k = n - from;
+      return { move: r.m, why: k === 1 ? `Your only throw so far was ${N(r.m)}.` : `${N(r.m)} is your most common throw lately (${r.c} of your last ${k}).` };
+    } },
+    { id: "repeat", name: "Repeat", run(n) {
+      if (n < 1) return null;
+      return { move: U[n - 1], why: `You threw ${N(U[n - 1])} last round, and this read bets on a repeat.` };
+    } },
+    { id: "copy", name: "Copy me", run(n) {
+      if (n < 1) return null;
+      return { move: A[n - 1], why: `I threw ${N(A[n - 1])} last round, and this read bets you'll copy it.` };
+    } },
+    { id: "after1", name: "After one", run(n) {
+      if (n < 2) return null;
+      const x = U[n - 1];
+      const r = tally(n, n - WINDOW, (i) => i >= 1 && U[i - 1] === x, (i) => U[i]);
+      return r && { move: r.m, why: `After you throw ${N(x)}, you've followed with ${N(r.m)} ${ofTimes(r.c, r.t)}.` };
+    } },
+    { id: "after2", name: "After two", run(n) {
+      if (n < 3) return null;
+      const x = U[n - 2];
+      const y = U[n - 1];
+      const r = tally(n, n - WINDOW, (i) => i >= 2 && U[i - 2] === x && U[i - 1] === y, (i) => U[i]);
+      return r && { move: r.m, why: `After ${N(x)} then ${N(y)}, you've followed with ${N(r.m)} ${ofTimes(r.c, r.t)}.` };
+    } },
+    { id: "matchup", name: "After the matchup", run(n) {
+      if (n < 2) return null;
+      const x = U[n - 1];
+      const y = A[n - 1];
+      const r = tally(n, n - WINDOW, (i) => i >= 1 && U[i - 1] === x && A[i - 1] === y, (i) => U[i]);
+      return r && { move: r.m, why: `When your ${N(x)} meets my ${N(y)}, you've gone ${N(r.m)} next ${ofTimes(r.c, r.t)}.` };
+    } },
+    { id: "react", name: "Win-stay, lose-shift", run(n) {
+      if (n < 2) return null;
+      const res = (i) => -outcome(A[i], U[i]);
+      const o = res(n - 1);
+      const r = tally(n, n - WINDOW, (i) => i >= 1 && res(i - 1) === o, (i) => (U[i] - U[i - 1] + 3) % 3);
+      if (!r) return null;
+      const move = (U[n - 1] + r.m) % 3;
+      const after = o === 1 ? "a win" : o === -1 ? "a loss" : "a draw";
+      const did = ["kept the same throw", "switched to the throw that beats your last one", "switched to the throw your last one beats"][r.m];
+      return { move, why: `After ${after}, you've ${did} ${ofTimes(r.c, r.t)}. That points to ${N(move)}.` };
+    } },
+    { id: "replay", name: "Your replay", run(n) {
+      const r = findRun(U, 2, 6);
+      return r && { move: r.next, why: `Your last ${r.L} throws (${U.slice(n - r.L).map(N).join(", ")}) match an earlier run, and that time you threw ${N(r.next)} next.` };
+    } },
+    { id: "gameReplay", name: "Game replay", run() {
+      const r = findRun(U.map((u, i) => u * 3 + A[i]), 2, 6);
+      if (!r) return null;
+      const move = Math.floor(r.next / 3);
+      return { move, why: `Our last ${r.L} rounds match an earlier stretch of the game, and that time you threw ${N(move)} next.` };
+    } },
+    { id: "myFav", name: "Counter my favorite", run(n) {
+      if (n < 1) return null;
+      const r = tally(n, n - 12, () => true, (i) => A[i]);
+      const move = beats(r.m);
+      return { move, why: `I've thrown ${N(r.m)} most lately. If you've noticed, you'd counter with ${N(move)}.` };
+    } },
+    { id: "myHabit", name: "Counter my habit", run(n) {
+      if (n < 2) return null;
+      const x = A[n - 1];
+      const r = tally(n, n - WINDOW, (i) => i >= 1 && A[i - 1] === x, (i) => A[i]);
+      if (!r) return null;
+      const move = beats(r.m);
+      return { move, why: `After I throw ${N(x)}, I've usually gone ${N(r.m)} next. If you've noticed, you'd counter with ${N(move)}.` };
+    } },
+    { id: "myReplay", name: "Counter my replay", run() {
+      const r = findRun(A, 2, 6);
+      if (!r) return null;
+      const move = beats(r.next);
+      return { move, why: `My last ${r.L} throws match an earlier run that I followed with ${N(r.next)}. If you've spotted it, you'd counter with ${N(move)}.` };
+    } },
+  ];
+
+  const VARIANTS = ["straight", "shifted up", "shifted down"];
+  const strats = [];
+  for (const p of PREDICTORS) {
+    for (let r = 0; r < 3; r++) strats.push({ key: `${p.id}:${r}`, p, r, name: p.name, variant: VARIANTS[r], score: 0, hits: [], assumed: null, out: null });
+  }
+  let pending = null;
+
+  function pickBest(list, rng) {
+    let top = -Infinity;
+    for (const s of list) top = Math.max(top, s.score);
+    const ties = list.filter((s) => s.score >= top - 1e-9);
+    return ties[Math.floor(rng() * ties.length)];
+  }
+
+  function explain(s) {
+    let t = s.out.why;
+    if (s.r === 1) t += ` But lately you've been throwing whatever beats that, which is ${N(s.assumed)}.`;
+    if (s.r === 2) t += ` But lately you've been throwing whatever that beats, which is ${N(s.assumed)}.`;
+    if (s.hits.length) t += ` This read has called ${s.hits.filter(Boolean).length} of the last ${s.hits.length} rounds.`;
+    return `${t} So I expected ${N(s.assumed)} and threw ${N(beats(s.assumed))}.`;
+  }
+
+  function pack(assumed, dist, why, s, kind) {
+    const label = s ? `${s.name}, ${s.variant}` : { opening: "Opening book", gut: "Gut read", random: "Random throw" }[kind];
+    return { play: beats(assumed), assumed, dist, why, kind, key: s ? s.key : null, label };
+  }
+
+  function decide(rng = Math.random) {
+    const n = U.length;
+    const outs = {};
+    for (const p of PREDICTORS) outs[p.id] = p.run(n);
+    const live = [];
+    for (const s of strats) {
+      s.out = outs[s.p.id];
+      s.assumed = s.out ? (s.out.move + s.r) % 3 : null;
+      if (s.out) live.push(s);
+    }
+    pending = live.map((s) => [s, s.assumed]);
+
+    const w = [0, 0, 0];
+    for (const s of live) w[s.assumed] += Math.exp(BETA * s.score);
+    const tot = w[0] + w[1] + w[2];
+    const dist = tot ? w.map((x) => x / tot) : [1 / 3, 1 / 3, 1 / 3];
+
+    if (n === 0) {
+      return pack(0, [0.4, 0.3, 0.3], "First round, so I have nothing on you yet. Rock is a popular opener, so I expected Rock and threw Paper.", null, "opening");
+    }
+
+    const best = live.length ? pickBest(live, rng) : null;
+    if (best && best.score > 0) {
+      let s = best;
+      if (MODE === "vote") {
+        const top = Math.max(...dist);
+        const ms = [0, 1, 2].filter((m) => dist[m] >= top - 1e-9);
+        const m = ms[Math.floor(rng() * ms.length)];
+        s = pickBest(live.filter((x) => x.assumed === m), rng);
+      }
+      return pack(s.assumed, dist, explain(s), s, "read");
+    }
+
+    const lastU = U[n - 1];
+    const res = -outcome(A[n - 1], lastU);
+    if (n < 4 && res === 1) {
+      return pack(lastU, dist, `You won last round, and winners tend to stick with the throw that worked. So I expected ${N(lastU)} again and threw ${N(beats(lastU))}.`, null, "gut");
+    }
+    if (n < 4 && res === -1) {
+      const m = beats(lastU);
+      return pack(m, dist, `You lost last round, and people who lose tend to switch to the throw that beats their last one. So I expected ${N(m)} and threw ${N(beats(m))}.`, null, "gut");
+    }
+    const m = Math.floor(rng() * 3);
+    return pack(m, dist, `None of my reads has a winning record right now, so I threw ${N(beats(m))} at random. Nobody can beat random on average, which makes it a safe throw while I look for your next pattern.`, null, "random");
+  }
+
+  function record(u, a) {
+    const touched = new Set();
+    for (const [s, m] of pending || []) {
+      s.score = s.score * DECAY + outcome(beats(m), u);
+      s.hits.push(m === u);
+      if (s.hits.length > 10) s.hits.shift();
+      touched.add(s);
+    }
+    for (const s of strats) if (!touched.has(s)) s.score *= DECAY;
+    pending = null;
+    U.push(u);
+    A.push(a);
+  }
+
+  function board(k) {
+    return strats
+      .slice()
+      .sort((x, y) => y.score - x.score)
+      .slice(0, k)
+      .map((s) => ({ key: s.key, name: s.name, variant: s.variant, score: s.score, h: s.hits.filter(Boolean).length, t: s.hits.length }));
+  }
+
+  return { decide, record, board, size: strats.length, max: 1 / (1 - DECAY) };
+}
+
+function sha256(ascii) {
+  const rot = (v, a) => (v >>> a) | (v << (32 - a));
+  const maxWord = 2 ** 32;
+  const words = [];
+  const bitLen = ascii.length * 8;
+  let hash = [];
+  const k = [];
+  const composite = {};
+  for (let c = 2, p = 0; p < 64; c++) {
+    if (composite[c]) continue;
+    for (let i = 0; i < 313; i += c) composite[i] = c;
+    hash[p] = (c ** 0.5 * maxWord) | 0;
+    k[p++] = (c ** (1 / 3) * maxWord) | 0;
+  }
+  hash = hash.slice(0, 8);
+  ascii += "\x80";
+  while ((ascii.length % 64) - 56) ascii += "\x00";
+  for (let i = 0; i < ascii.length; i++) {
+    const j = ascii.charCodeAt(i);
+    if (j >> 8) return null;
+    words[i >> 2] |= j << (((3 - i) % 4) * 8);
+  }
+  words[words.length] = (bitLen / maxWord) | 0;
+  words[words.length] = bitLen;
+  for (let j = 0; j < words.length; ) {
+    const w = words.slice(j, (j += 16));
+    const old = hash;
+    hash = hash.slice(0, 8);
+    for (let i = 0; i < 64; i++) {
+      const w15 = w[i - 15];
+      const w2 = w[i - 2];
+      const a = hash[0];
+      const e = hash[4];
+      const t1 = hash[7] + (rot(e, 6) ^ rot(e, 11) ^ rot(e, 25)) + ((e & hash[5]) ^ (~e & hash[6])) + k[i] +
+        (w[i] = i < 16 ? w[i] : (w[i - 16] + (rot(w15, 7) ^ rot(w15, 18) ^ (w15 >>> 3)) + w[i - 7] + (rot(w2, 17) ^ rot(w2, 19) ^ (w2 >>> 10))) | 0);
+      const t2 = (rot(a, 2) ^ rot(a, 13) ^ rot(a, 22)) + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+      hash = [(t1 + t2) | 0].concat(hash);
+      hash[4] = (hash[4] + t1) | 0;
+    }
+    for (let i = 0; i < 8; i++) hash[i] = (hash[i] + old[i]) | 0;
+  }
+  let out = "";
+  for (let i = 0; i < 8; i++) for (let j = 3; j + 1; j--) { const b = (hash[i] >> (j * 8)) & 255; out += (b < 16 ? "0" : "") + b.toString(16); }
+  return out;
+}
+// ===ENGINE END===
+</script>
+
+<script>
+const KEY = "sealed-throw:v1";
+const CAP = 1000;
+const HOLD = matchMedia("(prefers-reduced-motion: reduce)").matches ? 650 : 1000;
+const SVG = (inner) => `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+const ICONS = [
+  SVG('<path d="M12 30 9 21 15 12 26 9 36 13 40 23 37 33 27 38 16 37Z"/><path d="M15 12 20 22 9 21M20 22 30 24 36 13M30 24 37 33M20 22 16 37M30 24 27 38M20 22 12 30" stroke-width="1.6" opacity=".55"/>'),
+  SVG('<path d="M13 6h16l7 7v29H13Z"/><path d="M29 6v7h7"/><path d="M18 20h13M18 26h13M18 32h9" stroke-width="1.8" opacity=".55"/>'),
+  SVG('<circle cx="15" cy="36" r="5.5"/><circle cx="33" cy="36" r="5.5"/><path d="M18.5 31.5 34 8M29.5 31.5 14 8"/><circle cx="24" cy="23.2" r="1.5" fill="currentColor" stroke="none"/>'),
+];
+const KEYS = ["R", "P", "S"];
+const VERBS = { "0>2": "Rock crushes Scissors", "1>0": "Paper covers Rock", "2>1": "Scissors cut Paper" };
+const KIND = { 1: ["k-m", "I win", "Machine"], "-1": ["k-h", "You win", "You"], 0: ["k-d", "Draw", "Draw"] };
+
+const $ = (id) => document.getElementById(id);
+const els = Object.fromEntries(
+  ["mCard", "mBack", "hCard", "hFace", "cardHash", "verdict", "throws", "status", "leadSvg", "leadNote", "sM", "sD", "sH", "rate",
+   "last", "lastNo", "vRound", "verifyEmpty", "verifyBody", "vHash", "vText", "vCmd", "copyCmd", "board", "readCount", "ledger", "ledgerCount", "reset"]
+    .map((id) => [id, $(id)])
+);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+let engine;
+let rounds = [];
+let current = null;
+let busy = false;
+let timer = 0;
+let verifyIdx = -1;
+
+function randomHex(bytes) {
+  const a = new Uint8Array(bytes);
+  if (window.crypto?.getRandomValues) crypto.getRandomValues(a);
+  else for (let i = 0; i < bytes; i++) a[i] = Math.floor(Math.random() * 256);
+  return Array.from(a, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function loadSaved() {
+  try {
+    const d = JSON.parse(localStorage.getItem(KEY) || "null");
+    return d && Array.isArray(d.rounds) ? d.rounds : null;
+  } catch { return null; }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify({ rounds })); } catch {}
+}
+const validRound = (r) => r && [0, 1, 2].includes(r.u) && [0, 1, 2].includes(r.a) && typeof r.nonce === "string" && typeof r.hash === "string" && Number.isFinite(r.n);
+
+function seal() {
+  const d = engine.decide();
+  const nonce = randomHex(16);
+  const text = `${NAMES[d.play].toLowerCase()}:${nonce}`;
+  current = { ...d, nonce, hash: sha256(text) };
+  const h = current.hash;
+  els.cardHash.innerHTML = [0, 16, 32, 48].map((i) => `<span>${h.slice(i, i + 8)} ${h.slice(i + 8, i + 16)}</span>`).join("");
+  const next = (rounds.at(-1)?.n ?? 0) + 1;
+  els.status.textContent = `Round ${next}: my throw is sealed. Pick yours, or press R, P or S.`;
+}
+
+function setYou(u) {
+  if (u == null) {
+    els.hCard.classList.remove("filled");
+    els.hFace.innerHTML = `<span class="q">?</span><span class="wait">Your throw</span>`;
+    return;
+  }
+  els.hCard.classList.remove("filled");
+  void els.hCard.offsetWidth;
+  els.hCard.classList.add("filled");
+  els.hFace.innerHTML = `<span class="big-ic">${ICONS[u]}</span><span class="mv">${NAMES[u]}</span>`;
+}
+
+function verdict(r) {
+  if (!r) {
+    els.verdict.innerHTML = `<strong>Round 1</strong><span>My throw is locked. Yours?</span>`;
+    return;
+  }
+  const o = outcome(r.a, r.u);
+  const [cls, head] = KIND[o];
+  const line = o === 0 ? `Both ${NAMES[r.a]}.` : `${VERBS[o === 1 ? `${r.a}>${r.u}` : `${r.u}>${r.a}`]}.`;
+  els.verdict.innerHTML = `<strong class="${cls}">${head}</strong><span>${line}</span>`;
+}
+
+function throwMove(u) {
+  if (busy || !current) return;
+  busy = true;
+  els.throws.setAttribute("aria-busy", "true");
+  const c = current;
+  current = null;
+  const r = { n: (rounds.at(-1)?.n ?? 0) + 1, u, a: c.play, nonce: c.nonce, hash: c.hash, why: c.why, dist: c.dist.map((x) => Math.round(x * 1000) / 1000), assumed: c.assumed, label: c.label, key: c.key };
+  engine.record(u, c.play);
+  rounds.push(r);
+  if (rounds.length > CAP) rounds.shift();
+  save();
+  verifyIdx = rounds.length - 1;
+
+  setYou(u);
+  els.mBack.innerHTML = `<span class="big-ic">${ICONS[c.play]}</span><span class="mv">${NAMES[c.play]}</span>`;
+  els.mCard.classList.add("flipped");
+  verdict(r);
+  els.status.textContent = "Revealing…";
+  renderAll();
+
+  timer = setTimeout(() => {
+    seal();
+    els.mCard.classList.remove("flipped");
+    setYou(null);
+    busy = false;
+    els.throws.removeAttribute("aria-busy");
+  }, HOLD);
+}
+
+function renderScore() {
+  let m = 0, d = 0, h = 0;
+  for (const r of rounds) { const o = outcome(r.a, r.u); if (o > 0) m++; else if (o < 0) h++; else d++; }
+  els.sM.textContent = m;
+  els.sD.textContent = d;
+  els.sH.textContent = h;
+  els.rate.textContent = m + h
+    ? `I've taken ${Math.round((100 * m) / (m + h))}% of decided rounds. Fair odds would be 50%.`
+    : rounds.length ? "Only draws so far. Fair odds would be 50% of decided rounds." : "No rounds yet. Fair odds would be 50% of decided rounds.";
+}
+
+function renderLast() {
+  const r = rounds.at(-1);
+  if (!r) {
+    els.lastNo.textContent = "";
+    els.last.innerHTML = `<p class="empty">After your first throw you'll see what I expected you to throw, the pattern behind it, and which read I trusted.</p>`;
+    return;
+  }
+  const o = outcome(r.a, r.u);
+  const [cls, , who] = KIND[o];
+  els.lastNo.textContent = `Round ${r.n}`;
+  const bars = [0, 1, 2].map((m) => {
+    const pct = Math.round((r.dist?.[m] ?? 0) * 100);
+    return `<div class="bar${m === r.assumed ? " exp" : ""}"><span>${NAMES[m]}</span><span class="track"><span class="fill" style="width:${pct}%"></span></span><span class="pct">${pct}%</span>${m === r.u ? `<span class="you-tag">you threw</span>` : "<span></span>"}</div>`;
+  }).join("");
+  els.last.innerHTML = `
+    <p class="sum"><span>You threw <b class="h">${NAMES[r.u]}</b>, I threw <b class="m">${NAMES[r.a]}</b>.</span><span class="chip ${cls}">${o === 0 ? "Draw" : `${who} won`}</span></p>
+    <p class="sub">What I expected you to throw</p>
+    <div class="bars">${bars}</div>
+    <p class="why">${esc(r.why)}</p>
+    <p class="used">Read I trusted: <b>${esc(r.label)}</b></p>`;
+}
+
+function renderVerify() {
+  const r = rounds[verifyIdx];
+  els.verifyEmpty.hidden = !!r;
+  els.verifyBody.hidden = !r;
+  els.vRound.textContent = r ? `Round ${r.n}` : "";
+  if (!r) return;
+  const text = `${NAMES[r.a].toLowerCase()}:${r.nonce}`;
+  els.vHash.textContent = r.hash;
+  els.vText.textContent = text;
+  els.vCmd.textContent = `printf %s '${text}' | shasum -a 256`;
+}
+
+function renderBoard() {
+  const used = rounds.at(-1)?.key;
+  const rows = engine.board(6).map((s) => {
+    const w = Math.max(0, Math.min(100, (s.score / engine.max) * 100));
+    const v = `${s.score >= 0 ? "+" : "−"}${Math.abs(s.score).toFixed(1)}`;
+    return `<li class="${s.key === used ? "used" : ""}"><span class="nm">${esc(s.name)}<span class="var">${s.variant}${s.key === used ? " · used last round" : ""}</span></span><span class="rec">${s.t ? `${s.h}/${s.t}` : "–"}</span><span class="track"><span class="fill" style="width:${w}%"></span></span><span class="val">${v}</span></li>`;
+  });
+  els.board.innerHTML = `<li class="head"><span>Read</span><span class="rec">Called</span><span>Score</span><span></span></li>${rows.join("")}`;
+  els.readCount.textContent = `Top 6 of ${engine.size}`;
+}
+
+function renderLedger() {
+  els.ledgerCount.textContent = rounds.length ? `${rounds.length} round${rounds.length === 1 ? "" : "s"}` : "";
+  if (!rounds.length) {
+    els.ledger.innerHTML = `<tr><td colspan="6" class="empty" style="white-space:normal">Each round lands here with its fingerprint, newest first.</td></tr>`;
+    return;
+  }
+  const out = [];
+  for (let i = rounds.length - 1; i >= Math.max(0, rounds.length - 150); i--) {
+    const r = rounds[i];
+    const [cls, , who] = KIND[outcome(r.a, r.u)];
+    out.push(`<tr class="${i === verifyIdx ? "on" : ""}"><td>${r.n}</td><td class="m">${NAMES[r.a]}</td><td class="h">${NAMES[r.u]}</td><td><span class="chip ${cls}">${who}</span></td><td><code title="${r.hash}">${r.hash.slice(0, 12)}…</code></td><td><button class="link" type="button" data-i="${i}">Check</button></td></tr>`);
+  }
+  els.ledger.innerHTML = out.join("");
+}
+
+function renderLead() {
+  const svg = els.leadSvg;
+  const W = Math.max(260, Math.round(svg.getBoundingClientRect().width || 560));
+  const H = 150;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const n = rounds.length;
+  if (n < 2) {
+    els.leadNote.textContent = "";
+    svg.innerHTML = `<line class="c-zero" x1="34" x2="${W - 8}" y1="${H / 2}" y2="${H / 2}"/><text class="c-empty" x="${W / 2}" y="${H / 2 - 12}" text-anchor="middle">Fills in after a couple of rounds. Above the line, I'm ahead.</text>`;
+    return;
+  }
+  const cum = [0];
+  for (const r of rounds) cum.push(cum.at(-1) + outcome(r.a, r.u));
+  const max = Math.max(3, ...cum.map(Math.abs));
+  const L = 36, R = 44, T = 12, B = 24;
+  const x = (i) => L + (i / n) * (W - L - R);
+  const y = (v) => T + ((max - v) / (2 * max)) * (H - T - B);
+  const pts = cum.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const z = y(0);
+  const area = `${x(0)},${z} ${pts} ${x(n)},${z}`;
+  const end = cum[n];
+  const endCls = end > 0 ? "c-m" : end < 0 ? "c-h" : "c-d";
+  svg.innerHTML = `
+    <defs>
+      <clipPath id="clipUp"><rect x="0" y="0" width="${W}" height="${z}"/></clipPath>
+      <clipPath id="clipDn"><rect x="0" y="${z}" width="${W}" height="${H - z}"/></clipPath>
+    </defs>
+    <line class="c-grid" x1="${L}" x2="${W - R}" y1="${y(max)}" y2="${y(max)}"/>
+    <line class="c-grid" x1="${L}" x2="${W - R}" y1="${y(-max)}" y2="${y(-max)}"/>
+    <line class="c-zero" x1="${L}" x2="${W - R}" y1="${z}" y2="${z}"/>
+    <text class="c-lab" x="${L - 8}" y="${y(max) + 4}" text-anchor="end">+${max}</text>
+    <text class="c-lab" x="${L - 8}" y="${z + 4}" text-anchor="end">0</text>
+    <text class="c-lab" x="${L - 8}" y="${y(-max) + 4}" text-anchor="end">−${max}</text>
+    <polygon class="c-up" points="${area}" clip-path="url(#clipUp)"/>
+    <polygon class="c-dn" points="${area}" clip-path="url(#clipDn)"/>
+    <polyline class="c-line" points="${pts}"/>
+    <circle class="${endCls}" cx="${x(n)}" cy="${y(end)}" r="4.5"/>
+    <text class="c-lab ${endCls}" x="${x(n) + 9}" y="${y(end) + 4}">${end > 0 ? "+" : end < 0 ? "−" : ""}${Math.abs(end)}</text>
+    <text class="c-lab" x="${L}" y="${H - 6}">${rounds[0].n === 1 ? "Start" : `Round ${rounds[0].n - 1}`}</text>
+    <text class="c-lab" x="${W - R}" y="${H - 6}" text-anchor="end">Round ${rounds[n - 1].n}</text>`;
+  els.leadNote.textContent = end > 0 ? `I'm up ${end}` : end < 0 ? `You're up ${-end}` : "Dead even";
+}
+
+function renderAll() {
+  renderScore();
+  renderLast();
+  renderVerify();
+  renderBoard();
+  renderLedger();
+  renderLead();
+}
+
+function start(data) {
+  clearTimeout(timer);
+  busy = false;
+  els.throws.removeAttribute("aria-busy");
+  els.mCard.classList.remove("flipped");
+  engine = createEngine();
+  const saved = Array.isArray(data?.rounds) ? data.rounds : loadSaved() || [];
+  rounds = saved.filter(validRound).slice(-CAP);
+  for (const r of rounds) { engine.decide(); engine.record(r.u, r.a); }
+  verifyIdx = rounds.length - 1;
+  setYou(null);
+  verdict(rounds.at(-1));
+  seal();
+  renderAll();
+}
+
+ICONS.forEach((ic, m) => { $(`throw-${m}`).innerHTML = `${ic}<span class="nm">${NAMES[m]}</span><kbd>${KEYS[m]}</kbd>`; });
+els.throws.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-m]");
+  if (b) throwMove(+b.dataset.m);
+});
+document.addEventListener("keydown", (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+  const m = { r: 0, 1: 0, p: 1, 2: 1, s: 2, 3: 2 }[e.key.toLowerCase()];
+  if (m === undefined) return;
+  e.preventDefault();
+  const b = $(`throw-${m}`);
+  b.classList.add("hit");
+  setTimeout(() => b.classList.remove("hit"), 160);
+  throwMove(m);
+});
+els.ledger.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-i]");
+  if (!b) return;
+  verifyIdx = +b.dataset.i;
+  renderVerify();
+  renderLedger();
+  $("verifyBlock").scrollIntoView({ behavior: "smooth", block: "nearest" });
+});
+els.copyCmd.addEventListener("click", () => {
+  const text = els.vCmd.textContent;
+  const done = (msg) => { els.copyCmd.textContent = msg; setTimeout(() => (els.copyCmd.textContent = "Copy"), 1600); };
+  const fallback = () => {
+    const range = document.createRange();
+    range.selectNodeContents(els.vCmd);
+    const sel = getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    done("Selected");
+  };
+  try { navigator.clipboard.writeText(text).then(() => done("Copied"), fallback); } catch { fallback(); }
+});
+let armed = 0;
+els.reset.addEventListener("click", () => {
+  if (!armed) {
+    els.reset.classList.add("armed");
+    els.reset.textContent = `Wipe ${rounds.length} round${rounds.length === 1 ? "" : "s"}? Click again`;
+    armed = setTimeout(() => { armed = 0; els.reset.classList.remove("armed"); els.reset.textContent = "Forget me"; }, 4000);
+    return;
+  }
+  clearTimeout(armed);
+  armed = 0;
+  els.reset.classList.remove("armed");
+  els.reset.textContent = "Forget me";
+  rounds = [];
+  save();
+  start({ rounds: [] });
+});
+let resizeT = 0;
+addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(renderLead, 120); });
+
+window.claude?.hot?.snapshot?.(() => ({ rounds }));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>

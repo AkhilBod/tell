@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tell</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+<script type="module" src="app.js"></script>
+</head>
+<body data-mode="read">
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Webcam rock · paper · scissors</p>
+      <h1 id="title">Tell</h1>
+      <p class="tag" data-modes="read">I watch your hand through the camera and throw on Shoot, the same instant you do, using whatever your fingers gave away on the way down.</p>
+      <p class="tag" data-modes="coach">Hold a fist unless I say a letter. I learn what your opponent throws most and tell you the counter before the countdown, and I watch their hand for Paper coming.</p>
+      <p class="tag" data-modes="react">Now you read me. Before Shoot I say a letter, R, P or S, for the throw that beats mine. React in time and you win. Each time you win, the warning comes later.</p>
+    </div>
+    <div class="score" aria-live="polite">
+      <div class="side m"><span class="lab" id="sMLab">Machine</span><span class="num" id="sM">0</span></div>
+      <div class="side d"><span class="lab">Draws</span><span class="num" id="sD">0</span></div>
+      <div class="side h"><span class="lab" id="sHLab">You</span><span class="num" id="sH">0</span></div>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="stage-col" aria-label="Camera">
+      <div class="modes" role="radiogroup" aria-label="Mode">
+        <label><input type="radio" name="mode" id="modeRead" value="read" checked><span>I read you</span></label>
+        <label><input type="radio" name="mode" id="modeReact" value="react"><span>You read me</span></label>
+        <label><input type="radio" name="mode" id="modeCoach" value="coach"><span>I coach you</span></label>
+      </div>
+      <div class="stage" id="stage" data-view="cam">
+        <video id="oppVideo" playsinline muted hidden></video>
+        <canvas id="oppOverlay" hidden></canvas>
+        <video id="video" playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <div class="sides" id="sides" hidden><span id="sideL">Left player</span><span id="sideR">Right player</span></div>
+        <div class="cue-dot" id="cueDot" hidden></div>
+        <div class="seen" id="seen" hidden>No hand in view</div>
+        <div class="machine-throw" id="machineThrow" hidden></div>
+        <div class="call" id="call" aria-live="assertive"></div>
+        <div class="cue-flash" id="cueFlash" hidden></div>
+        <div class="banner" id="banner" hidden></div>
+        <div class="gate" id="gate">
+          <p class="gate-title">Camera off</p>
+          <p class="gate-copy">Tell needs your camera to watch your hand. The video is processed in this browser tab and never uploaded.</p>
+          <button class="primary" id="startCam" type="button">Turn on camera</button>
+          <p class="err" id="err" hidden></p>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="primary" id="play" type="button" disabled>Play round <kbd>Space</kbd></button>
+        <label class="toggle"><input type="checkbox" id="auto"> Auto-play next round</label>
+        <label class="toggle"><input type="checkbox" id="sound" checked> Beat sounds</label>
+        <label class="toggle"><input type="checkbox" id="record"> Record rounds</label>
+        <label class="toggle setup" data-modes="coach">Opponent
+          <select id="oppSource">
+            <option value="random">Random human (generated)</option>
+            <option value="clip">My clips as recorded</option>
+            <option value="live">Live person on camera</option>
+          </select>
+        </label>
+        <label class="toggle setup" data-modes="coach" id="oppSideWrap" hidden>Their side
+          <select id="oppSide">
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+          </select>
+        </label>
+        <label class="toggle setup" data-modes="coach">Tip-off
+          <select id="coachCue">
+            <option value="voice">Spoken letter</option>
+            <option value="beep">Spoken plan, beep for "s"</option>
+            <option value="big">Big letter on screen</option>
+            <option value="corner">Small letter in corner</option>
+          </select>
+        </label>
+        <label class="toggle setup" data-modes="coach"><input type="checkbox" id="judgeView"> Judge view <kbd>J</kbd></label>
+        <label class="toggle" data-modes="react">Cue
+          <select id="cueType">
+            <option value="sound">Spoken letter</option>
+            <option value="flash">Letter on screen</option>
+            <option value="both">Both</option>
+          </select>
+        </label>
+      </div>
+      <p class="rec-status" id="recStatus" hidden></p>
+      <p class="hint" data-modes="coach"><b>Practice:</b> a generated opponent picks Rock, Paper or Scissors truly at random each round and throws it with one of your recorded hands, a little early or late and a little faster or slower, like a person would. Hold a fist unless you hear a letter. If you hear one, throw it. You'll get at most one letter per round. <b>Live:</b> aim the camera so it sees both players' hands, set which side your opponent is on, and press J for Judge view, which shows only the countdown and results.</p>
+      <p class="hint" data-modes="react">Hold a fist and pump to the beat as usual. When you hear the letter, throw it on <b>Shoot</b>. Your throw is still whatever you hold 150 to 350 ms after Shoot.</p>
+      <p class="hint" data-modes="read">Hold a fist in view. Pump it on <b>Rock</b>, <b>Paper</b>, <b>Scissors</b> and throw on <b>Shoot</b>. Your throw is whatever you hold 150 to 350 ms after Shoot. Changing it later doesn't count.</p>
+    </section>
+
+    <aside class="side-col" aria-label="The machine's readout">
+      <section class="block">
+        <h3>My throw</h3>
+        <div class="mine" id="mine" data-state="idle"></div>
+      </section>
+
+      <section class="block" data-modes="coach">
+        <h3>Opponent clips <span id="clipCount">none yet</span></h3>
+        <p class="fine">Record yourself as the opponent: pump and throw anything on Shoot, and mix it up. Clips are saved without labels, so I read each one cold.</p>
+        <div class="clip-actions">
+          <button class="ghost" id="newOpp" type="button">New opponent <kbd>N</kbd></button>
+          <button class="ghost" id="recClips" type="button">Record 10 clips</button>
+          <button class="ghost" id="testClips" type="button">Test my reads on every clip</button>
+        </div>
+        <p class="rec-status" id="clipStatus" hidden></p>
+        <div class="test-result" id="testResult"></div>
+      </section>
+
+      <section class="block" data-modes="react">
+        <h3>My cues <span>the letter is your throw</span></h3>
+        <div class="cues" id="cues"></div>
+      </section>
+
+      <section class="block">
+        <h3>Your fingers <span>0 curled · 100 straight</span></h3>
+        <div class="fingers" id="fingers"></div>
+      </section>
+
+      <section class="block">
+        <h3>Last round <span id="lastNo"></span></h3>
+        <canvas id="chart" aria-label="Finger openness over time for the last round"></canvas>
+        <div class="legend">
+          <span><i style="background:var(--f-index)"></i>Index</span>
+          <span><i style="background:var(--f-middle)"></i>Middle</span>
+          <span><i style="background:var(--f-ring)"></i>Ring</span>
+          <span><i style="background:var(--f-pinky)"></i>Pinky</span>
+          <span><i class="bar-m"></i>Shoot, my throw</span>
+          <span data-modes="read"><i class="bar-m dash"></i>Last frame I used</span>
+          <span data-modes="react coach"><i class="bar-m dash"></i>My cue</span>
+          <span data-modes="react coach"><i class="bar-h solid"></i>You started moving</span>
+          <span data-modes="coach">Lines show <b>their</b> fingers</span>
+          <span><i class="bar-h"></i>Your hand formed</span>
+          <span><i class="win"></i>Your throw is read here</span>
+        </div>
+        <p class="story" id="story">Play a round and I'll show your finger movement here, the last camera frame I used before Shoot, and when your hand finished forming.</p>
+      </section>
+
+      <section class="block">
+        <h3>Reaction record</h3>
+        <dl class="stats" data-modes="coach">
+          <div><dt>Their throws so far</dt><dd id="stSeen">–</dd></div>
+          <div><dt>Camera read of their throw was right</dt><dd id="stCalls">–</dd></div>
+          <div><dt>Median first correct read</dt><dd id="stFirst">–</dd></div>
+          <div><dt>You beat them on time</dt><dd id="stOnTime">–</dd></div>
+          <div><dt>You beat them if late throws count</dt><dd id="stLate">–</dd></div>
+          <div><dt>Your reaction to my cue</dt><dd id="stReact">–</dd></div>
+        </dl>
+        <dl class="stats" data-modes="react">
+          <div><dt>Cue lead now</dt><dd id="stLead">–</dd></div>
+          <div><dt>You beat me</dt><dd id="stBeat">–</dd></div>
+          <div><dt>Median reaction (cue to fingers moving)</dt><dd id="stRt">–</dd></div>
+          <div><dt>Shortest warning you beat</dt><dd id="stBest">–</dd></div>
+        </dl>
+        <dl class="stats" data-modes="read">
+          <div><dt>Correct reads</dt><dd id="stReads">–</dd></div>
+          <div><dt>Camera reads (tell before Shoot)</dt><dd id="stCam">–</dd></div>
+          <div><dt>Held-shape reads (bait)</dt><dd id="stHabit">–</dd></div>
+          <div><dt>Pattern reads (still fist)</dt><dd id="stPat">–</dd></div>
+          <div><dt>Camera lag</dt><dd id="stLag">–</dd></div>
+        </dl>
+      </section>
+    </aside>
+  </main>
+</div>
+</body>
+</html>
